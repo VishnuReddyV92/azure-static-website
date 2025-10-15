@@ -24,7 +24,7 @@ pool:
 
 variables:
   storageAccountName: 'staticwebsiteaccount'
-  resourceGroup: 'rg-static-website'  
+  resourceGroup: 'rg-static-website'
 
 steps:
 # Checkout code from GitHub
@@ -80,21 +80,56 @@ steps:
     ArtifactName: 'website'
     publishLocation: 'Container'
 
-# FIXED: Replace AzureCLI with AzureFileCopy (recommended approach)
-- task: AzureFileCopy@4
+# FIXED: Use Azure CLI with proper quotes and error handling for Linux
+- task: AzureCLI@2
   displayName: 'Deploy to Azure Storage Static Website'
   inputs:
-    SourcePath: '$(Build.ArtifactStagingDirectory)'
     azureSubscription: 'azure-static-website-connection'
-    Destination: 'AzureBlob'
-    storage: '$(storageAccountName)'
-    ContainerName: '$web'
-    BlobPrefix: ''
-    CleanTargetBeforeCopy: true
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Starting deployment to Azure Storage..."
+      echo "Storage Account: $(storageAccountName)"
+      echo "Resource Group: $(resourceGroup)"
+      
+      # FIXED: Added proper quotes and error handling
+      echo "Uploading files to Azure Storage..."
+      az storage blob upload-batch \
+        --account-name "$(storageAccountName)" \
+        --source "$(Build.ArtifactStagingDirectory)" \
+        --destination '$web' \
+        --overwrite
+      
+      if [ $? -eq 0 ]; then
+        echo "✅ Files uploaded successfully!"
+      else
+        echo "❌ File upload failed!"
+        exit 1
+      fi
+      
+      echo "🎉 Deployment completed successfully!"
+      echo "🌐 Your static website is now live at:"
+      echo "https://$(storageAccountName).z6.web.core.windows.net"
+      
+      # Optional: List the uploaded files for verification
+      echo ""
+      echo "Uploaded files:"
+      az storage blob list \
+        --account-name "$(storageAccountName)" \
+        --container-name '$web' \
+        --query "[].name" \
+        --output table
 
-# FIXED: Simple success message
+# Final success message
 - script: |
-    echo "🎉 Deployment completed successfully!"
-    echo "🌐 Your static website is now live at:"
+    echo "=========================================="
+    echo "🚀 CI/CD PIPELINE COMPLETED SUCCESSFULLY!"
+    echo "=========================================="
+    echo "Your static website has been deployed to:"
     echo "https://$(storageAccountName).z6.web.core.windows.net"
-  displayName: 'Display Website URL'
+    echo ""
+    echo "Next steps:"
+    echo "1. Open the URL above in your browser"
+    echo "2. Verify all pages work correctly"
+    echo "3. Celebrate! 🎉"
+  displayName: 'Pipeline Success'

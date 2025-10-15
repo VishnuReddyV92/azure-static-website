@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Static Website</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="hero">
+            <h1>Welcome to My Static Website</h1>
+            <p>This website is deployed using Azure DevOps CI/CD</p>
+            <button onclick="showAlert()">Click Me!</button>
+        </section>
+        
+        <section class="features">
+            <div class="feature-card">
+                <h3>Azure DevOps</h3>
+                <p>Automated deployment pipeline</p>
+            </div>
+            <div class="feature-card">
+                <h3>Azure Storage</h3>
+                <p>Static website hosting</p>
+            </div>
+            <div class="feature-card">
+                <h3>CI/CD</h3>
+                <p>Continuous deployment</p>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2024 My Static Website. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function showAlert() {
+            alert('Hello! This is our static website!');
+        }
+    </script>
+</body>
+</html>

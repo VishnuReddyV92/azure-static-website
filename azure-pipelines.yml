@@ -1,0 +1,110 @@
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - README.md
+
+pr:
+  branches:
+    include:
+    - main
+
+resources:
+  repositories:
+    - repository: github-repo
+      type: github
+      name: YOUR_USERNAME/azure-static-website
+      endpoint: my-github-connection
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  storageAccountName: 'staticwebsiteaccount'  # Replace with your actual storage account name
+  containerName: '$web'
+
+steps:
+# Checkout code from GitHub
+- checkout: github-repo
+  displayName: 'Checkout Code from GitHub'
+
+# Display repository info
+- script: |
+    echo "Building from GitHub repository: $(Build.Repository.Name)"
+    echo "Branch: $(Build.SourceBranchName)"
+    echo "Commit: $(Build.SourceVersion)"
+  displayName: 'Display Repository Information'
+
+# List files (for verification)
+- script: |
+    echo "Files in repository:"
+    find . -type f -name "*.html" -o -name "*.css" -o -name "*.yml" | sort
+  displayName: 'List Project Files'
+
+# Validate we have the necessary files
+- script: |
+    if [ ! -f "index.html" ]; then
+      echo "ERROR: index.html not found!"
+      exit 1
+    fi
+    if [ ! -f "css/styles.css" ]; then
+      echo "ERROR: css/styles.css not found!"
+      exit 1
+    fi
+    echo "All required files found!"
+  displayName: 'Validate Required Files'
+
+# Create deployment artifact
+- task: CopyFiles@2
+  displayName: 'Copy Files to Artifact Directory'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: |
+      **/*.html
+      **/*.css
+      **/*.js
+      **/*.png
+      **/*.jpg
+      **/*.svg
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    OverWrite: true
+
+# Publish build artifact (optional, for debugging)
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Build Artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'website'
+    publishLocation: 'Container'
+
+# Install Azure CLI
+- task: AzureCLI@2
+  displayName: 'Deploy to Azure Storage Static Website'
+  inputs:
+    azureSubscription: 'azure-static-website-connection'  # Replace with your actual service connection name here
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Starting deployment to Azure Storage..."
+      echo "Storage Account: $(storageAccountName)"
+      echo "Container: $(containerName)"
+      
+      # Upload all files to Azure Storage
+      az storage blob upload-batch \
+        --account-name $(storageAccountName) \
+        --source $(Build.ArtifactStagingDirectory) \
+        --destination $(containerName) \
+        --overwrite
+      
+      echo "Deployment completed successfully!"
+      
+      # Get the static website URL
+      echo "Website URL:"
+      az storage account show \
+        --name $(storageAccountName) \
+        --resource-group static-website-rg \
+        --query "primaryEndpoints.web" \
+        --output tsv

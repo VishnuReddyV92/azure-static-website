@@ -16,8 +16,9 @@ resources:
   repositories:
     - repository: github-repo
       type: github
-      name: YOUR_USERNAME/azure-static-website
-      endpoint: my-github-connection
+      name: VishnuReddyV92/azure-static-website
+      endpoint: github-oauth-connection
+
 
 pool:
   vmImage: 'ubuntu-latest'

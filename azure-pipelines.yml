@@ -19,13 +19,12 @@ resources:
       name: VishnuReddyV92/azure-static-website
       endpoint: github-oauth-connection
 
-
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  storageAccountName: 'staticwebsiteaccount'  # Replace with your actual storage account name
-  containerName: '$web'
+  storageAccountName: 'staticwebsiteaccount'
+  resourceGroup: 'rg-static-website'  
 
 steps:
 # Checkout code from GitHub
@@ -81,31 +80,21 @@ steps:
     ArtifactName: 'website'
     publishLocation: 'Container'
 
-# Install Azure CLI
-- task: AzureCLI@2
+# FIXED: Replace AzureCLI with AzureFileCopy (recommended approach)
+- task: AzureFileCopy@4
   displayName: 'Deploy to Azure Storage Static Website'
   inputs:
-    azureSubscription: 'azure-static-website-connection'  # Replace with your actual service connection name here
-    scriptType: 'bash'
-    scriptLocation: 'inlineScript'
-    inlineScript: |
-      echo "Starting deployment to Azure Storage..."
-      echo "Storage Account: $(storageAccountName)"
-      echo "Container: $(containerName)"
-      
-      # Upload all files to Azure Storage
-      az storage blob upload-batch \
-        --account-name $(storageAccountName) \
-        --source $(Build.ArtifactStagingDirectory) \
-        --destination $(containerName) \
-        --overwrite
-      
-      echo "Deployment completed successfully!"
-      
-      # Get the static website URL
-      echo "Website URL:"
-      az storage account show \
-        --name $(storageAccountName) \
-        --resource-group static-website-rg \
-        --query "primaryEndpoints.web" \
-        --output tsv
+    SourcePath: '$(Build.ArtifactStagingDirectory)'
+    azureSubscription: 'azure-static-website-connection'
+    Destination: 'AzureBlob'
+    storage: '$(storageAccountName)'
+    ContainerName: '$web'
+    BlobPrefix: ''
+    CleanTargetBeforeCopy: true
+
+# FIXED: Simple success message
+- script: |
+    echo "🎉 Deployment completed successfully!"
+    echo "🌐 Your static website is now live at:"
+    echo "https://$(storageAccountName).z6.web.core.windows.net"
+  displayName: 'Display Website URL'
